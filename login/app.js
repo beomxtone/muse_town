@@ -96,6 +96,10 @@ app.get('/welcome', function (req, res) {
   else
     res.render('welcome', {name:req.user.username});
 });
+app.get('/logout', function (req, res) {
+  req.logout();
+  res.redirect('/');
+});
 
 app.post('/login',
   passport.authenticate(
