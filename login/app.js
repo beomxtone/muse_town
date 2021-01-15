@@ -37,12 +37,13 @@ app.use(passport.session());
 
 passport.use(new LocalStorage(
   function(username, password, done) {
-    var sql = "SELECT * FROM users"; // WHERE user_id=?
+    var sql = "SELECT * FROM users WHERE username=?";
     conn.query(sql, [username], function(err, results) {
       //console.log(results)
       if(err)
         return done(err);
-      if(!results[0])
+      
+      if(results.length === 0)
         return done('check id');
 
       var user = results[0];
@@ -112,7 +113,31 @@ app.post('/login',
   )
 );
 app.post('/forgetpassword', function(req, res) {
-  console.log(req.body.username);
+  var sql = 'SELECT * FROM users WHERE username="' + req.body.username + '"';
+  conn.query(sql, function(err, results) {
+    if (err) {
+      console.log(err);
+    }
+    if (results.length === 0) {
+      console.log('no users in db');
+    } else {
+      const uid = require('rand-token').uid;
+      const token = uid(6);
+      console.log(token);
+
+      conn.query('UPDATE users SET auth ="' + token + '" WHERE username="' + req.body.username + '"', function(err, results) {
+        if (err) {
+          console.log(err);
+        } else {
+          res.redirect('/passwordreset');
+        }
+      });
+
+      let current = new Date();
+      current.setMinutes(current.getMinutes() + 5);
+      console.log(current.toLocaleString());
+    }
+  });
 });
 
 app.listen(3000, function() {
