@@ -5,10 +5,8 @@ var MySQLStore = require('express-mysql-session')(session);
 var passport = require('passport')
 var LocalStorage = require('passport-local').Strategy;
 var bodyParser = require('body-parser');
-var jade = require('jade');
 var crypto = require('crypto');
-var buf = require('buffer').Buffer;
-const { doesNotMatch } = require('assert');
+const randtoken = require('rand-token');
 
 var app = express();
 var conn = mysql.createConnection({
@@ -100,6 +98,9 @@ app.get('/logout', function (req, res) {
   req.logout();
   res.redirect('/');
 });
+app.get('/forgetPassword', function (req, res) {
+  res.render('forgetpassword');
+});
 
 app.post('/login',
   passport.authenticate(
@@ -110,6 +111,9 @@ app.post('/login',
     }
   )
 );
+app.post('/forgetpassword', function(req, res) {
+  console.log(req.body.username);
+});
 
 app.listen(3000, function() {
   console.log("Express server listening on port 3000");
