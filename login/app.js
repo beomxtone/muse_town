@@ -77,6 +77,8 @@ passport.deserializeUser(function(user, done) {
   done(null, user);
 });
 
+var temp = '';
+
 app.get('/', function (req, res) {
   if(!req.user)
     res.redirect('/login');
@@ -101,6 +103,12 @@ app.get('/logout', function (req, res) {
 });
 app.get('/forgetPassword', function (req, res) {
   res.render('forgetpassword');
+});
+app.get('/passwordreset', function (req, res) {
+  res.render('passwordreset');
+});
+app.get('/changepassword', function(req, res) {
+  res.render('changepassword');
 });
 
 app.post('/login',
@@ -129,6 +137,7 @@ app.post('/forgetpassword', function(req, res) {
         if (err) {
           console.log(err);
         } else {
+          temp = req.body.username;
           res.redirect('/passwordreset');
         }
       });
@@ -136,6 +145,32 @@ app.post('/forgetpassword', function(req, res) {
       let current = new Date();
       current.setMinutes(current.getMinutes() + 5);
       console.log(current.toLocaleString());
+    }
+  });
+});
+app.post('/passwordreset', function(req, res) {
+  var sql = 'SELECT auth FROM users WHERE username="' + temp + '"';
+  conn.query(sql, function(err, results) {
+    if (err) {
+      console.log(err);
+      res.redirect('/');
+    }
+    if (results[0].auth == req.body.auth) {
+      console.log('Valid authentication key');
+      res.redirect('/changepassword');
+    } else {
+      console.log('Invalid authentication key')
+      res.redirect('/forgetpassword');
+    }
+  });
+});
+app.post('/changepassword', function(req, res) {
+  var sql = 'UPDATE users SET password ="' + req.body.password + '" WHERE username="' + temp + '"';
+  conn.query(sql, function(err, results) {
+    if (err) {
+      console.log(err);
+    } else {
+      res.redirect('/');
     }
   });
 });
