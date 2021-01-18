@@ -14,7 +14,8 @@ var conn = mysql.createConnection({
   port: 3306,
   user: 'root',
   password: '1234',
-  database: 'test'
+  database: 'test',
+  multipleStatements: true
 });
 conn.connect();
 app.set('view engine', 'jade');
@@ -133,33 +134,49 @@ app.post('/forgetpassword', function(req, res) {
       const token = uid(6);
       console.log(token);
 
-      conn.query('UPDATE users SET auth ="' + token + '" WHERE username="' + req.body.username + '"', function(err, results) {
+      conn.query('UPDATE users SET auth ="' + token + '" WHERE username = "' + req.body.username + '"', function(err, results) {
         if (err) {
           console.log(err);
         } else {
           temp = req.body.username;
-          res.redirect('/passwordreset');
+          console.log(req.get('host') + '/passwordreset');
+          //res.redirect('/passwordreset');
         }
       });
 
       let current = new Date();
       current.setMinutes(current.getMinutes() + 5);
-      console.log(current.toLocaleString());
+
+      conn.query('UPDATE users SET timestamp ="' + current.toLocaleString() + '" WHERE username = "' + req.body.username + '"', function(err, results) {
+        if (err) {
+          console.log(err);
+        } else {
+          console.log(current.toLocaleString());
+          res.redirect('/passwordreset');
+        }
+      });
     }
   });
 });
 app.post('/passwordreset', function(req, res) {
-  var sql = 'SELECT auth FROM users WHERE username="' + temp + '"';
-  conn.query(sql, function(err, results) {
+  var sql1 = 'SELECT auth FROM users WHERE username="' + temp + '";';
+  var sql2 = 'SELECT timestamp FROM users WHERE username="' + temp + '";';
+  conn.query(sql1 + sql2, function(err, results) {
     if (err) {
       console.log(err);
       res.redirect('/');
     }
-    if (results[0].auth == req.body.auth) {
-      console.log('Valid authentication key');
-      res.redirect('/changepassword');
+    let now = new Date();
+    if (results[0][0].auth == req.body.auth) {
+      if (results[1][0].timestamp.toLocaleString() >= now.toLocaleString()) {
+        console.log('Valid authentication key');
+        res.redirect('/changepassword');
+      } else {
+        console.log('Timed out');
+        res.redirect('/changepassword');
+      }
     } else {
-      console.log('Invalid authentication key')
+      console.log('Invalid authentication key');
       res.redirect('/forgetpassword');
     }
   });
